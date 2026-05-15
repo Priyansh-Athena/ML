@@ -20,20 +20,20 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 2, g: 2, b: 2, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
-  m_AmbientMode: 0
+  m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 5fb2c903d94dea6409b63aa1a30b3e92, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
   m_HaloTexture: {fileID: 0}
   m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
   m_DefaultReflectionMode: 0
-  m_DefaultReflectionResolution: 128
+  m_DefaultReflectionResolution: 512
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
@@ -153,7 +153,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -184,7 +184,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 4464563e826a4d04a890ea6835019aea, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -292,8 +292,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
-  orthographic size: 5
+  orthographic: 1
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -317,13 +317,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.21357827, y: 0.67265624, z: -0.21244805, w: 0.6758578}
-  m_LocalPosition: {x: -11.952384, y: 6.1535892, z: -0.33318928}
+  m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
+  m_LocalPosition: {x: -13.9, y: 19.24, z: -13.33}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 45, y: 45, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -682,7 +682,7 @@ Light:
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2
+  m_Intensity: 5
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -744,13 +744,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!114 &410087042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -878,7 +878,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 1bcd9b725256c63488287e5fd413f325, type: 2}
+  - {fileID: 2100000, guid: 21827f1faa0421245afff441a51d4c12, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -942,25 +942,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.DecisionRequester
-  DecisionPeriod: 5
+  DecisionPeriod: 1
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1
---- !u!114 &1439257520
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1439257517}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88b6042bc9a5d4aa58d931eae49442e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Agent
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
 --- !u!114 &1439257521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -977,16 +961,16 @@ MonoBehaviour:
     VectorObservationSize: 7
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 0
+      m_NumContinuousActions: 3
       BranchSizes: 01000000
-    VectorActionSize: 01000000
+    VectorActionSize: 
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
   m_BehaviorType: 0
-  m_BehaviorName: My Behavior
+  m_BehaviorName: TurretShooter
   TeamId: 0
   m_UseChildSensors: 1
   m_UseChildActuators: 1
@@ -1072,15 +1056,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 0}
-      propertyPath: target
-      value: 
-      objectReference: {fileID: 263916811}
-    - target: {fileID: 0}
-      propertyPath: circleCenter
-      value: 
-      objectReference: {fileID: 354556889}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1933024026240155203, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+    - {fileID: 4568233350980992529, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+    - {fileID: 8441413867799400722, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+    - {fileID: 9187387454577547685, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -1089,11 +1069,74 @@ PrefabInstance:
       addedObject: {fileID: 1439257521}
     - targetCorrespondingSourceObject: {fileID: 1669830885233637793, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1439257520}
+      addedObject: {fileID: 1439257519}
     - targetCorrespondingSourceObject: {fileID: 1669830885233637793, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1439257519}
+      addedObject: {fileID: 7355840077404272063}
   m_SourcePrefab: {fileID: 100100000, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+--- !u!4 &7355840077404272059 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1209925291201068292, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+  m_PrefabInstance: {fileID: 7355840077404272058}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7355840077404272060 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6488430861990474717, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+  m_PrefabInstance: {fileID: 7355840077404272058}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7355840077404272061 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3872461324555713308, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+  m_PrefabInstance: {fileID: 7355840077404272058}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7355840077404272062 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
+  m_PrefabInstance: {fileID: 7355840077404272058}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7355840077404272063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1439257517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f840295c7595f9544a6f9f218ea4bb7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SevenParameterMovingShooterAgent
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
+  circleCenter: {fileID: 354556889}
+  robotRoot: {fileID: 7355840077404272062}
+  turretYawPivot: {fileID: 7355840077404272061}
+  hoodPitchPivot: {fileID: 7355840077404272060}
+  muzzle: {fileID: 7355840077404272059}
+  target: {fileID: 263916811}
+  ballPrefab: {fileID: 4765275133096010633, guid: 841c42a1c4e5a8e4fb2bb746f6f1cc0e, type: 3}
+  circleRadius: 5
+  fixedMoveSpeed: 1.5
+  arriveDistance: 0.15
+  rotateRobotAlongPath: 1
+  yawLocalAxis: {x: 0, y: 1, z: 0}
+  pitchLocalAxis: {x: 0, y: 1, z: 0}
+  yawDirection: 1
+  pitchDirection: 1
+  maxYawDeg: 360
+  maxPitchDeg: 180
+  maxYawDeltaPerStep: 5
+  maxPitchDeltaPerStep: 2
+  maxRpm: 6000
+  aimStepsBeforeShot: 20
+  maxBallFlightTime: 2.5
+  hitReward: 100
+  timePenalty: -0.05
+  missPenaltyMultiplier: 1
+  positionNormalizer: 5
+  velocityNormalizer: 2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

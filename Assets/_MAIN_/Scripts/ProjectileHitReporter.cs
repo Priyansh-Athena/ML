@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class ProjectileHitReporter : MonoBehaviour
 {
-    private TurretShooterAgent ownerAgent;
+    private SevenParameterMovingShooterAgent ownerAgent;
 
-    public void Initialize(TurretShooterAgent agent)
+    public void Initialize(SevenParameterMovingShooterAgent agent)
     {
         ownerAgent = agent;
     }
@@ -13,7 +13,9 @@ public class ProjectileHitReporter : MonoBehaviour
     {
         if (collision.transform.CompareTag("Target"))
         {
-            ownerAgent.ReportProjectileHit();
+            if (ownerAgent != null)
+                ownerAgent.ReportProjectileHit();
+
             Destroy(gameObject);
         }
     }
@@ -22,7 +24,9 @@ public class ProjectileHitReporter : MonoBehaviour
     {
         if (other.CompareTag("Target"))
         {
-            ownerAgent.ReportProjectileHit();
+            if (ownerAgent != null)
+                ownerAgent.ReportProjectileHit();
+
             Destroy(gameObject);
         }
     }
