@@ -1,0 +1,47 @@
+{
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cpu"
+    },
+    "TurretShooter": {
+        "checkpoints": [
+            {
+                "steps": 499942,
+                "file_path": "results\\ftc_v1\\TurretShooter\\TurretShooter-499942.onnx",
+                "reward": null,
+                "creation_time": 1778841508.5951016,
+                "auxillary_file_paths": [
+                    "results\\ftc_v1\\TurretShooter\\TurretShooter-499942.pt"
+                ]
+            },
+            {
+                "steps": 999996,
+                "file_path": "results\\ftc_v1\\TurretShooter\\TurretShooter-999996.onnx",
+                "reward": -14.499264978227162,
+                "creation_time": 1778844713.3163059,
+                "auxillary_file_paths": [
+                    "results\\ftc_v1\\TurretShooter\\TurretShooter-999996.pt"
+                ]
+            },
+            {
+                "steps": 1000003,
+                "file_path": "results\\ftc_v1\\TurretShooter\\TurretShooter-1000003.onnx",
+                "reward": -15.21257594498721,
+                "creation_time": 1778844713.3875902,
+                "auxillary_file_paths": [
+                    "results\\ftc_v1\\TurretShooter\\TurretShooter-1000003.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1000003,
+            "file_path": "results\\ftc_v1\\TurretShooter.onnx",
+            "reward": -15.21257594498721,
+            "creation_time": 1778844713.3875902,
+            "auxillary_file_paths": [
+                "results\\ftc_v1\\TurretShooter\\TurretShooter-1000003.pt"
+            ]
+        }
+    }
+}
