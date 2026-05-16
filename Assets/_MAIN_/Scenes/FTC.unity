@@ -967,7 +967,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: 622993f4d12c47c4ab6c712d5a1b366c, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: TurretShooter
@@ -1117,26 +1117,37 @@ MonoBehaviour:
   muzzle: {fileID: 7355840077404272059}
   target: {fileID: 263916811}
   ballPrefab: {fileID: 4765275133096010633, guid: 841c42a1c4e5a8e4fb2bb746f6f1cc0e, type: 3}
+  minTargetForward: 0.5
+  maxTargetForward: 3.5
+  maxTargetSide: 1.5
+  targetRelativeHeight: 1.2
   circleRadius: 5
   fixedMoveSpeed: 1.5
-  arriveDistance: 0.15
-  rotateRobotAlongPath: 1
+  minPathDistance: 1.75
+  keepRobotHeadingFixed: 1
   yawLocalAxis: {x: 0, y: 1, z: 0}
   pitchLocalAxis: {x: 0, y: 1, z: 0}
   yawDirection: 1
   pitchDirection: 1
-  maxYawDeg: 360
-  maxPitchDeg: 180
+  minYawDeg: -90
+  maxYawDeg: 90
+  minPitchDeg: 0
+  maxPitchDeg: 90
   maxYawDeltaPerStep: 5
   maxPitchDeltaPerStep: 2
   maxRpm: 6000
   aimStepsBeforeShot: 20
-  maxBallFlightTime: 2.5
+  hitRadius: 0.2
   hitReward: 100
   timePenalty: -0.05
   missPenaltyMultiplier: 1
+  spawnVisualBall: 0
   positionNormalizer: 5
   velocityNormalizer: 2
+  evaluationMode: 0
+  evaluationEpisodeLimit: 100
+  stopAfterEvaluation: 1
+  logEveryEpisode: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
