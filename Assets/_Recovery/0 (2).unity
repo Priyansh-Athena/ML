@@ -225,7 +225,7 @@ Transform:
   m_GameObject: {fileID: 263916807}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5, y: 1.9, z: 3}
+  m_LocalPosition: {x: 5, y: 3, z: 3}
   m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -293,7 +293,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 3.5
+  orthographic size: 2.57
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -318,7 +318,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
-  m_LocalPosition: {x: -14, y: 21.45, z: -14}
+  m_LocalPosition: {x: -14, y: 20, z: -14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -838,12 +838,12 @@ MonoBehaviour:
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 3
-      BranchSizes: 
-    VectorActionSize: 03000000
+      BranchSizes: 01000000
+    VectorActionSize: 
     VectorActionDescriptions: []
-    VectorActionSpaceType: 1
+    VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: 622993f4d12c47c4ab6c712d5a1b366c, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: TurretShooter
@@ -886,7 +886,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.92387956
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.x
@@ -894,7 +894,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.38268343
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.z
@@ -906,7 +906,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 45
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 181709901442501502, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -934,11 +934,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6488430861990474717, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 0.96295106
       objectReference: {fileID: 0}
     - target: {fileID: 6488430861990474717, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.7071068
+      value: 0.26967627
       objectReference: {fileID: 0}
     - target: {fileID: 6488430861990474717, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalRotation.z
@@ -946,7 +946,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6488430861990474717, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 90
+      value: 31.29
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 1933024026240155203, guid: 046d7e293b53ffb4a83f964290d58793, type: 3}
@@ -1001,7 +1001,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 50
+  MaxStep: 0
   fieldCenter: {fileID: 354556889}
   robotRoot: {fileID: 7355840077404272062}
   turretYawPivot: {fileID: 7355840077404272061}
@@ -1012,7 +1012,7 @@ MonoBehaviour:
   fieldSizeMeters: 3.6576
   targetCorner: 0
   autoPlaceTargetAtCorner: 1
-  autoFaceRobotTowardTargetCorner: 0
+  autoFaceRobotTowardTargetCorner: 1
   minTargetForward: 0.5
   maxTargetForward: 3.5
   maxTargetSide: 1.5
@@ -1043,14 +1043,14 @@ MonoBehaviour:
   hitReward: 100
   timePenalty: -0.05
   missPenaltyMultiplier: 1
-  spawnVisualBall: 0
-  delayEpisodeForVisuals: 0
+  spawnVisualBall: 1
+  delayEpisodeForVisuals: 1
   visualSecondsAfterShot: 1.5
-  drawDebugTrajectory: 0
+  drawDebugTrajectory: 1
   debugTrajectorySeconds: 2
   debugTrajectorySegments: 30
   debugTrajectoryDuration: 0.25
-  positionNormalizer: 3.5
+  positionNormalizer: 5
   velocityNormalizer: 2
   evaluationMode: 0
   evaluationEpisodeLimit: 100

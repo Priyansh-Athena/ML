@@ -5,8 +5,16 @@ using Unity.MLAgents.Sensors;
 
 public class SevenParameterMovingShooterAgent : Agent
 {
+    public enum TargetCorner
+    {
+        PositiveXPositiveZ,
+        NegativeXPositiveZ,
+        PositiveXNegativeZ,
+        NegativeXNegativeZ
+    }
+
     [Header("Scene References")]
-    public Transform circleCenter;
+    public Transform fieldCenter;
     public Transform robotRoot;
     public Transform turretYawPivot;
     public Transform hoodPitchPivot;
@@ -14,19 +22,37 @@ public class SevenParameterMovingShooterAgent : Agent
     public Transform target;
     public Rigidbody ballPrefab;
 
-    [Header("Document Target Ranges")]
-    public float minTargetForward = 0.5f;     // ΔY min from doc
-    public float maxTargetForward = 3.5f;     // ΔY max from doc
-    public float maxTargetSide = 1.5f;        // ΔX range = -1.5 to +1.5
-    public float targetRelativeHeight = 1.2f; // ΔZ from doc
+    [Header("FTC Field")]
+    public float fieldSizeMeters = 3.6576f; // 12 ft
+    public TargetCorner targetCorner = TargetCorner.PositiveXPositiveZ;
+    public bool autoPlaceTargetAtCorner = true;
 
-    [Header("Arena")]
-    public float circleRadius = 5f;
+    [Tooltip("Keep this FALSE if you want yaw to matter. If true, robot body faces target corner and yaw becomes easier.")]
+    public bool autoFaceRobotTowardTargetCorner = false;
+
+    [Header("Document Target Ranges")]
+    public float minTargetForward = 0.5f;
+    public float maxTargetForward = 3.5f;
+    public float maxTargetSide = 1.5f;
+    public float targetRelativeHeight = 1.2f;
 
     [Header("Robot Motion A -> B")]
     public float fixedMoveSpeed = 1.5f;
-    public float minPathDistance = 1.75f;
+    public float minPathDistance = 0.75f;
+
+    [Tooltip("FTC-style mecanum behavior: robot translates but keeps heading fixed.")]
     public bool keepRobotHeadingFixed = true;
+
+    [Header("A/B Point Validation")]
+    public bool validateReachability = true;
+    public int maxPointSearchAttempts = 5000;
+    public float minActualForwardAtShoot = 0.5f;
+    public float maxActualForwardAtShoot = 3.5f;
+    public float maxActualSideAtShoot = 1.5f;
+
+    [Header("Yaw Training Constraints")]
+    public float minAbsSideOffsetAtShoot = 0.25f;
+    public float minLateralVelocityForYawTraining = 0.25f;
 
     [Header("Turret Axis Settings")]
     public Vector3 yawLocalAxis = Vector3.up;
@@ -49,7 +75,15 @@ public class SevenParameterMovingShooterAgent : Agent
     public float hitReward = 100f;
     public float timePenalty = -0.1f;
     public float missPenaltyMultiplier = 1f;
+
+    [Header("Visual Mode")]
     public bool spawnVisualBall = false;
+    public bool delayEpisodeForVisuals = false;
+    public float visualSecondsAfterShot = 1.5f;
+    public bool drawDebugTrajectory = false;
+    public float debugTrajectorySeconds = 2.0f;
+    public int debugTrajectorySegments = 30;
+    public float debugTrajectoryDuration = 0.25f;
 
     [Header("Observation Normalization")]
     public float positionNormalizer = 3.5f;
@@ -82,17 +116,24 @@ public class SevenParameterMovingShooterAgent : Agent
     private Quaternion pitchBaseRotation;
 
     private bool hasShot;
+    private bool waitingForVisualEnd;
+    private float visualTimer;
     private Rigidbody activeBall;
+
+    private bool warnedTargetHeight = false;
 
     private void Awake()
     {
-        robotBaseRotation = robotRoot.rotation;
         yawBaseRotation = turretYawPivot.localRotation;
         pitchBaseRotation = hoodPitchPivot.localRotation;
+
+        ConfigureFieldTargetAndRobotHeading();
     }
 
     public override void OnEpisodeBegin()
     {
+        ConfigureFieldTargetAndRobotHeading();
+
         if (evaluationMode && !evaluationStarted)
         {
             evaluationStarted = true;
@@ -103,6 +144,8 @@ public class SevenParameterMovingShooterAgent : Agent
         CleanupBall();
 
         hasShot = false;
+        waitingForVisualEnd = false;
+        visualTimer = 0f;
 
         currentYawDeg = 0f;
         currentPitchDeg = 45f;
@@ -112,6 +155,8 @@ public class SevenParameterMovingShooterAgent : Agent
         {
             robotRoot.rotation = robotBaseRotation;
         }
+
+        ApplyTurretPose();
 
         GenerateValidPointAAndB();
 
@@ -123,40 +168,29 @@ public class SevenParameterMovingShooterAgent : Agent
         moveDirectionWorld = flatDirection.normalized;
         chassisVelocityWorld = moveDirectionWorld * fixedMoveSpeed;
 
+        if (keepRobotHeadingFixed)
+        {
+            robotRoot.rotation = robotBaseRotation;
+        }
+
         ApplyTurretPose();
+        ValidateTargetHeightOnce();
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        // Exactly 7 observations from the document:
-        // ΔX, ΔY, ΔZ, Vx, Vy, current yaw, current pitch.
-
         Vector3 targetFromMuzzleWorld = target.position - muzzle.position;
         Vector3 targetFromMuzzleRobot = robotRoot.InverseTransformDirection(targetFromMuzzleWorld);
-
         Vector3 chassisVelocityRobot = robotRoot.InverseTransformDirection(chassisVelocityWorld);
 
-        // 1. ΔX: target left/right relative to robot
         sensor.AddObservation(targetFromMuzzleRobot.x / positionNormalizer);
-
-        // 2. ΔY: target forward distance relative to robot
-        // Unity local forward is Z.
         sensor.AddObservation(targetFromMuzzleRobot.z / positionNormalizer);
-
-        // 3. ΔZ: target height relative to muzzle
-        // Unity height is Y.
         sensor.AddObservation(targetFromMuzzleRobot.y / positionNormalizer);
 
-        // 4. Vx: robot-local sideways velocity
         sensor.AddObservation(chassisVelocityRobot.x / velocityNormalizer);
-
-        // 5. Vy: robot-local forward velocity
         sensor.AddObservation(chassisVelocityRobot.z / velocityNormalizer);
 
-        // 6. Current yaw normalized to approximately [-1, +1]
         sensor.AddObservation(currentYawDeg / maxYawDeg);
-
-        // 7. Current pitch normalized to [0, 1]
         sensor.AddObservation(currentPitchDeg / maxPitchDeg);
     }
 
@@ -164,32 +198,98 @@ public class SevenParameterMovingShooterAgent : Agent
     {
         MoveRobotFromAToB();
 
-        if (!hasShot)
+        if (waitingForVisualEnd)
         {
-            float yawAction = Mathf.Clamp(actions.ContinuousActions[0], -1f, 1f);
-            float pitchAction = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
-            float rpmAction = Mathf.Clamp(actions.ContinuousActions[2], -1f, 1f);
+            visualTimer += Time.fixedDeltaTime;
 
-            // Document: yaw change = action[0] * 5 degrees
-            currentYawDeg += yawAction * maxYawDeltaPerStep;
-            currentYawDeg = Mathf.Clamp(currentYawDeg, minYawDeg, maxYawDeg);
-
-            // Document: pitch change = action[1] * 2 degrees, clipped 0 to 90
-            currentPitchDeg += pitchAction * maxPitchDeltaPerStep;
-            currentPitchDeg = Mathf.Clamp(currentPitchDeg, minPitchDeg, maxPitchDeg);
-
-            // Document: RPM maps from [-1, 1] to [0, 6000]
-            currentRpm = (rpmAction + 1f) * 0.5f * maxRpm;
-
-            ApplyTurretPose();
-
-            AddReward(timePenalty);
-
-            if (StepCount >= aimStepsBeforeShot)
+            if (visualTimer >= visualSecondsAfterShot)
             {
-                FireAndEvaluateShot();
-                hasShot = true;
+                EndEpisode();
             }
+
+            return;
+        }
+
+        if (hasShot)
+            return;
+
+        float yawAction = Mathf.Clamp(actions.ContinuousActions[0], -1f, 1f);
+        float pitchAction = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
+        float rpmAction = Mathf.Clamp(actions.ContinuousActions[2], -1f, 1f);
+
+        currentYawDeg += yawAction * maxYawDeltaPerStep;
+        currentYawDeg = Mathf.Clamp(currentYawDeg, minYawDeg, maxYawDeg);
+
+        currentPitchDeg += pitchAction * maxPitchDeltaPerStep;
+        currentPitchDeg = Mathf.Clamp(currentPitchDeg, minPitchDeg, maxPitchDeg);
+
+        currentRpm = (rpmAction + 1f) * 0.5f * maxRpm;
+
+        ApplyTurretPose();
+
+        AddReward(timePenalty);
+
+        if (StepCount >= aimStepsBeforeShot)
+        {
+            FireAndEvaluateShot();
+            hasShot = true;
+        }
+    }
+
+    private void ConfigureFieldTargetAndRobotHeading()
+    {
+        Vector3 cornerPosition = GetTargetCornerPosition();
+
+        if (autoPlaceTargetAtCorner && target != null)
+        {
+            target.position = new Vector3(
+                cornerPosition.x,
+                target.position.y,
+                cornerPosition.z
+            );
+        }
+
+        if (autoFaceRobotTowardTargetCorner)
+        {
+            Vector3 fieldToTarget = cornerPosition - fieldCenter.position;
+            fieldToTarget.y = 0f;
+
+            if (fieldToTarget.sqrMagnitude > 0.001f)
+            {
+                robotBaseRotation = Quaternion.LookRotation(fieldToTarget.normalized, Vector3.up);
+            }
+            else
+            {
+                robotBaseRotation = robotRoot.rotation;
+            }
+        }
+        else
+        {
+            robotBaseRotation = robotRoot.rotation;
+        }
+    }
+
+    private Vector3 GetTargetCornerPosition()
+    {
+        float half = fieldSizeMeters * 0.5f;
+        Vector3 center = fieldCenter.position;
+
+        switch (targetCorner)
+        {
+            case TargetCorner.PositiveXPositiveZ:
+                return center + new Vector3(half, 0f, half);
+
+            case TargetCorner.NegativeXPositiveZ:
+                return center + new Vector3(-half, 0f, half);
+
+            case TargetCorner.PositiveXNegativeZ:
+                return center + new Vector3(half, 0f, -half);
+
+            case TargetCorner.NegativeXNegativeZ:
+                return center + new Vector3(-half, 0f, -half);
+
+            default:
+                return center + new Vector3(half, 0f, half);
         }
     }
 
@@ -219,16 +319,46 @@ public class SevenParameterMovingShooterAgent : Agent
     {
         bool found = false;
 
-        for (int attempt = 0; attempt < 500; attempt++)
+        for (int attempt = 0; attempt < maxPointSearchAttempts; attempt++)
         {
             Vector3 candidateA = GenerateRobotPositionFromDocTargetRange();
             Vector3 candidateB = GenerateRobotPositionFromDocTargetRange();
 
-            bool aInsideCircle = IsInsideCircle(candidateA);
-            bool bInsideCircle = IsInsideCircle(candidateB);
+            bool aInsideField = IsInsideField(candidateA);
+            bool bInsideField = IsInsideField(candidateB);
             bool farEnough = Vector3.Distance(candidateA, candidateB) >= minPathDistance;
 
-            if (aInsideCircle && bInsideCircle && farEnough)
+            Vector3 estimatedShootPoint = EstimateShootPoint(candidateA, candidateB);
+
+            bool aReachable = !validateReachability || IsTargetReachableFromRobotPose(candidateA);
+            bool bReachable = !validateReachability || IsTargetReachableFromRobotPose(candidateB);
+            bool shootReachable = !validateReachability || IsTargetReachableFromRobotPose(estimatedShootPoint);
+
+            Vector3 targetAtShoot = GetTargetRelativeFromRobotPose(estimatedShootPoint);
+            bool yawActuallyNeeded = Mathf.Abs(targetAtShoot.x) >= minAbsSideOffsetAtShoot;
+
+            Vector3 candidateDirection = candidateB - candidateA;
+            candidateDirection.y = 0f;
+
+            if (candidateDirection.sqrMagnitude < 0.001f)
+                continue;
+
+            Vector3 candidateVelocityWorld = candidateDirection.normalized * fixedMoveSpeed;
+            Vector3 candidateVelocityRobot = Quaternion.Inverse(robotBaseRotation) * candidateVelocityWorld;
+
+            bool hasLateralMotion =
+                Mathf.Abs(candidateVelocityRobot.x) >= minLateralVelocityForYawTraining;
+
+            if (
+                aInsideField &&
+                bInsideField &&
+                farEnough &&
+                aReachable &&
+                bReachable &&
+                shootReachable &&
+                yawActuallyNeeded &&
+                hasLateralMotion
+            )
             {
                 pointA = candidateA;
                 pointB = candidateB;
@@ -240,8 +370,9 @@ public class SevenParameterMovingShooterAgent : Agent
         if (!found)
         {
             Debug.LogWarning(
-                "Could not find valid A/B points inside the circle using document ranges. " +
-                "Increase circle radius or move the fixed target closer to the circle."
+                "Could not find valid A/B points with current constraints. " +
+                "Lower Min Abs Side Offset At Shoot / Min Lateral Velocity / Min Path Distance, " +
+                "or check field center, target corner, and robot heading."
             );
 
             pointA = GenerateRobotPositionFromDocTargetRange();
@@ -251,39 +382,107 @@ public class SevenParameterMovingShooterAgent : Agent
 
     private Vector3 GenerateRobotPositionFromDocTargetRange()
     {
-        // The document defines the target relative to the robot:
-        // ΔX in [-1.5, 1.5]
-        // ΔY in [0.5, 3.5]
-        // ΔZ = 1.2
-        //
-        // Since target is fixed in Unity, we reverse this:
-        // robot position = target position - ΔX * robotRight - ΔY * robotForward
-
         float dx = Random.Range(-maxTargetSide, maxTargetSide);
         float dy = Random.Range(minTargetForward, maxTargetForward);
 
         Vector3 robotRight = robotBaseRotation * Vector3.right;
         Vector3 robotForward = robotBaseRotation * Vector3.forward;
 
-        Vector3 targetFlat = new Vector3(target.position.x, robotRoot.position.y, target.position.z);
+        Vector3 oldPosition = robotRoot.position;
+        Quaternion oldRotation = robotRoot.rotation;
+
+        robotRoot.rotation = robotBaseRotation;
+
+        Vector3 muzzleLocalOffset = robotRoot.InverseTransformPoint(muzzle.position);
+
+        robotRoot.position = oldPosition;
+        robotRoot.rotation = oldRotation;
+
+        Vector3 muzzlePlanarOffsetWorld =
+            robotRight * muzzleLocalOffset.x +
+            robotForward * muzzleLocalOffset.z;
+
+        Vector3 targetFlat = new Vector3(
+            target.position.x,
+            robotRoot.position.y,
+            target.position.z
+        );
 
         Vector3 robotPosition =
             targetFlat
             - robotRight * dx
-            - robotForward * dy;
+            - robotForward * dy
+            - muzzlePlanarOffsetWorld;
 
         return robotPosition;
     }
 
-    private bool IsInsideCircle(Vector3 position)
+    private Vector3 EstimateShootPoint(Vector3 candidateA, Vector3 candidateB)
     {
-        Vector3 flatOffset = new Vector3(
-            position.x - circleCenter.position.x,
-            0f,
-            position.z - circleCenter.position.z
-        );
+        Vector3 path = candidateB - candidateA;
+        path.y = 0f;
 
-        return flatOffset.magnitude <= circleRadius;
+        float totalDistance = path.magnitude;
+
+        if (totalDistance <= 0.001f)
+            return candidateA;
+
+        float travelBeforeShot = fixedMoveSpeed * Time.fixedDeltaTime * aimStepsBeforeShot;
+        float progress = Mathf.Clamp01(travelBeforeShot / totalDistance);
+
+        return Vector3.Lerp(candidateA, candidateB, progress);
+    }
+
+    private Vector3 GetTargetRelativeFromRobotPose(Vector3 robotPosition)
+    {
+        Vector3 oldPosition = robotRoot.position;
+        Quaternion oldRotation = robotRoot.rotation;
+
+        robotRoot.position = robotPosition;
+
+        if (keepRobotHeadingFixed)
+        {
+            robotRoot.rotation = robotBaseRotation;
+        }
+
+        ApplyTurretPose();
+
+        Vector3 targetFromMuzzleWorld = target.position - muzzle.position;
+        Vector3 targetFromMuzzleRobot = robotRoot.InverseTransformDirection(targetFromMuzzleWorld);
+
+        robotRoot.position = oldPosition;
+        robotRoot.rotation = oldRotation;
+
+        return targetFromMuzzleRobot;
+    }
+
+    private bool IsTargetReachableFromRobotPose(Vector3 robotPosition)
+    {
+        Vector3 targetFromMuzzleRobot = GetTargetRelativeFromRobotPose(robotPosition);
+
+        float dx = targetFromMuzzleRobot.x;
+        float dy = targetFromMuzzleRobot.z;
+        float dz = targetFromMuzzleRobot.y;
+
+        float requiredYaw = Mathf.Atan2(dx, dy) * Mathf.Rad2Deg;
+
+        float horizontalDistance = new Vector2(dx, dy).magnitude;
+        float lineOfSightPitch = Mathf.Atan2(dz, horizontalDistance) * Mathf.Rad2Deg;
+
+        bool targetInFront = dy >= minActualForwardAtShoot && dy <= maxActualForwardAtShoot;
+        bool targetSideValid = Mathf.Abs(dx) <= maxActualSideAtShoot;
+        bool yawValid = requiredYaw >= minYawDeg && requiredYaw <= maxYawDeg;
+        bool pitchValid = lineOfSightPitch >= minPitchDeg && lineOfSightPitch <= maxPitchDeg;
+
+        return targetInFront && targetSideValid && yawValid && pitchValid;
+    }
+
+    private bool IsInsideField(Vector3 position)
+    {
+        float half = fieldSizeMeters * 0.5f;
+        Vector3 local = fieldCenter.InverseTransformPoint(position);
+
+        return Mathf.Abs(local.x) <= half && Mathf.Abs(local.z) <= half;
     }
 
     private void ApplyTurretPose()
@@ -300,11 +499,16 @@ public class SevenParameterMovingShooterAgent : Agent
 
     private void FireAndEvaluateShot()
     {
-        bool hit = EvaluateShotMath(out float missDistance);
+        bool hit = EvaluateShotMath(out float missDistance, out Vector3 projectileVelocity);
+
+        if (drawDebugTrajectory)
+        {
+            DrawTrajectoryDebug(muzzle.position, projectileVelocity);
+        }
 
         if (spawnVisualBall)
         {
-            ShootVisualBall();
+            ShootVisualBall(projectileVelocity);
         }
 
         if (hit)
@@ -318,32 +522,29 @@ public class SevenParameterMovingShooterAgent : Agent
             AddReward(-missDistance * missPenaltyMultiplier);
         }
 
-        EndEpisode();
+        if (spawnVisualBall && delayEpisodeForVisuals)
+        {
+            waitingForVisualEnd = true;
+            visualTimer = 0f;
+        }
+        else
+        {
+            EndEpisode();
+        }
     }
 
-    private bool EvaluateShotMath(out float missDistance)
+    private bool EvaluateShotMath(out float missDistance, out Vector3 projectileVelocity)
     {
         Vector3 start = muzzle.position;
         Vector3 targetPoint = target.position;
 
-        float wheelRadiusMeters = 0.0508f;
-
-        float exitSpeed =
-            currentRpm * 2f * Mathf.PI / 60f * wheelRadiusMeters;
-
-        Vector3 shooterVelocity = muzzle.forward * exitSpeed;
-
-        // This is the inherited momentum from the moving chassis.
-        Vector3 projectileVelocity = shooterVelocity + chassisVelocityWorld;
+        projectileVelocity = CalculateProjectileVelocity();
 
         Vector3 relativeTarget = targetPoint - start;
 
         float targetHeight = relativeTarget.y;
         float verticalVelocity = projectileVelocity.y;
         float gravity = Mathf.Abs(Physics.gravity.y);
-
-        // targetHeight = verticalVelocity * t - 0.5 * gravity * t^2
-        // 0.5*g*t^2 - verticalVelocity*t + targetHeight = 0
 
         float a = 0.5f * gravity;
         float b = -verticalVelocity;
@@ -399,6 +600,18 @@ public class SevenParameterMovingShooterAgent : Agent
         return missDistance <= hitRadius;
     }
 
+    private Vector3 CalculateProjectileVelocity()
+    {
+        float wheelRadiusMeters = 0.0508f;
+
+        float exitSpeed =
+            currentRpm * 2f * Mathf.PI / 60f * wheelRadiusMeters;
+
+        Vector3 shooterVelocity = muzzle.forward * exitSpeed;
+
+        return shooterVelocity + chassisVelocityWorld;
+    }
+
     private float HorizontalMissDistance(Vector3 projectilePosition, Vector3 targetPoint)
     {
         Vector2 projectileXZ = new Vector2(projectilePosition.x, projectilePosition.z);
@@ -407,7 +620,7 @@ public class SevenParameterMovingShooterAgent : Agent
         return Vector2.Distance(projectileXZ, targetXZ);
     }
 
-    private void ShootVisualBall()
+    private void ShootVisualBall(Vector3 projectileVelocity)
     {
         if (ballPrefab == null)
             return;
@@ -415,15 +628,23 @@ public class SevenParameterMovingShooterAgent : Agent
         Rigidbody ball = Instantiate(ballPrefab, muzzle.position, Quaternion.identity);
         activeBall = ball;
 
-        float wheelRadiusMeters = 0.0508f;
-
-        float exitSpeed =
-            currentRpm * 2f * Mathf.PI / 60f * wheelRadiusMeters;
-
-        Vector3 shooterVelocity = muzzle.forward * exitSpeed;
-        Vector3 projectileVelocity = shooterVelocity + chassisVelocityWorld;
-
         ball.linearVelocity = projectileVelocity;
+    }
+
+    private void DrawTrajectoryDebug(Vector3 start, Vector3 projectileVelocity)
+    {
+        Vector3 previous = start;
+
+        for (int i = 1; i <= debugTrajectorySegments; i++)
+        {
+            float t = debugTrajectorySeconds * i / debugTrajectorySegments;
+
+            Vector3 point =
+                start + projectileVelocity * t + 0.5f * Physics.gravity * t * t;
+
+            Debug.DrawLine(previous, point, Color.magenta, debugTrajectoryDuration);
+            previous = point;
+        }
     }
 
     private void CleanupBall()
@@ -433,6 +654,25 @@ public class SevenParameterMovingShooterAgent : Agent
             Destroy(activeBall.gameObject);
             activeBall = null;
         }
+    }
+
+    private void ValidateTargetHeightOnce()
+    {
+        if (warnedTargetHeight)
+            return;
+
+        float actualDz = target.position.y - muzzle.position.y;
+        float error = Mathf.Abs(actualDz - targetRelativeHeight);
+
+        if (error > 0.25f)
+        {
+            Debug.LogWarning(
+                $"Target relative height ΔZ is {actualDz:F2} m, but document value is {targetRelativeHeight:F2} m. " +
+                "Adjust target height or muzzle height if you want strict doc matching."
+            );
+        }
+
+        warnedTargetHeight = true;
     }
 
     private void RecordEvaluationResult(bool hit, float missDistance)
@@ -518,11 +758,11 @@ public class SevenParameterMovingShooterAgent : Agent
 
     private void OnDrawGizmosSelected()
     {
-        if (circleCenter == null)
+        if (fieldCenter == null)
             return;
 
         Gizmos.color = Color.green;
-        DrawCircleGizmo(circleCenter.position, circleRadius);
+        DrawFieldGizmo();
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawSphere(pointA, 0.08f);
@@ -532,25 +772,25 @@ public class SevenParameterMovingShooterAgent : Agent
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawLine(pointA, pointB);
+
+        Vector3 shootPoint = EstimateShootPoint(pointA, pointB);
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawSphere(shootPoint, 0.1f);
     }
 
-    private void DrawCircleGizmo(Vector3 center, float radius)
+    private void DrawFieldGizmo()
     {
-        int segments = 96;
-        Vector3 previous = center + new Vector3(radius, 0f, 0f);
+        float half = fieldSizeMeters * 0.5f;
+        Vector3 center = fieldCenter.position;
 
-        for (int i = 1; i <= segments; i++)
-        {
-            float angle = i * Mathf.PI * 2f / segments;
+        Vector3 p1 = center + new Vector3(-half, 0f, -half);
+        Vector3 p2 = center + new Vector3(-half, 0f, half);
+        Vector3 p3 = center + new Vector3(half, 0f, half);
+        Vector3 p4 = center + new Vector3(half, 0f, -half);
 
-            Vector3 next = center + new Vector3(
-                Mathf.Cos(angle) * radius,
-                0f,
-                Mathf.Sin(angle) * radius
-            );
-
-            Gizmos.DrawLine(previous, next);
-            previous = next;
-        }
+        Gizmos.DrawLine(p1, p2);
+        Gizmos.DrawLine(p2, p3);
+        Gizmos.DrawLine(p3, p4);
+        Gizmos.DrawLine(p4, p1);
     }
 }
